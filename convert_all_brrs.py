@@ -21,18 +21,21 @@ def main():
 
 
 def get_loop(wavpath):
-    # TODO: does it detect unlooped WAVs correctly? Also there is probably a cleaner way to do this.
     with wavpath.open(mode="rb") as file:
         wav_filedata = file.read()
-        offset = wav_filedata.find(b'smpl') + 52  # The loop point is 52 bytes after the "smpl" string
-        file.seek(offset)
+        offset = wav_filedata.find(b'smpl')
+
+        if offset == -1: #This WAV file doesn't have a SMPL chunk!
+            return -1
+
+        file.seek(offset + 52) #Now that we know the WAV file does have a loop point, look for it 52 bytes later.
         return int.from_bytes(file.read(2), byteorder="little")  # Read it from that offset
 
 
 def get_command(brr_encoder_path, wavpath, loop):
     message = ""
     result = ""
-    if loop != 0:
+    if loop != -1:
         message = f"  ~ Converting {wavpath.name} with loop point {loop} ~"
         result = f"\"{brr_encoder_path}\" -l{loop} -m -g \"{wavpath.name}\" \"{wavpath.stem}.brr\""
     else:
